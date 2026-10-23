@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ReCalc — S-02 モック</title>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* モック：S-02 ヘルプ（S-01 の上に重ねて表示。背面は S-01 を iframe で表示） */
+  :root {
+    --panel: #34302b; --panel-2: #3e3933; --line: rgba(0,0,0,.42);
+    --text: #efe9dd; --muted: #a39b8e; --dim: #6c655b;
+    --accent: #f0bd2c; --accent-soft: rgba(240,189,44,.12);
+    --mono: "Archivo", "Hiragino Sans", "Yu Gothic UI", "Meiryo", system-ui, sans-serif;
+    --sans: "Archivo", "Hiragino Sans", "Yu Gothic UI", "Meiryo", system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; background: #8d8579; }
+  iframe { position: fixed; inset: 0; width: 100%; height: 100%; border: 0; }
+  .backdrop {
+    position: fixed; inset: 0; background: rgba(30,24,16,.6);
+    backdrop-filter: blur(6px); display: grid; place-items: center; padding: 24px;
+  }
+  .dialog {
+    width: min(860px, 100%); max-height: calc(100vh - 48px); overflow: auto;
+    background: linear-gradient(180deg, var(--panel-2), var(--panel));
+    border: 1px solid var(--line); border-radius: 20px; color: var(--text);
+    font-family: var(--sans); padding: 24px 28px 28px;
+    box-shadow: 0 40px 80px -20px rgba(0,0,0,.8);
+  }
+  .head { display: flex; align-items: center; margin-bottom: 16px; }
+  .head h2 { margin: 0; font-size: 20px; }
+  .head .close {
+    margin-left: auto; font: inherit; font-size: 12px; color: var(--muted);
+    background: none; border: 1px solid var(--line); border-radius: 8px; padding: 6px 10px; cursor: pointer;
+  }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px 28px; }
+  @media (max-width: 720px) { .grid { grid-template-columns: 1fr; } }
+  h3 { margin: 0 0 8px; font-size: 14px; color: var(--accent); }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  td { padding: 6px 0; border-bottom: 1px solid rgba(0,0,0,.42); box-shadow: 0 1px 0 rgba(255,255,255,.05); vertical-align: top; }
+  td:first-child { width: 44%; white-space: nowrap; }
+  td:last-child { color: var(--muted); }
+  kbd, code {
+    font-family: var(--mono); font-size: 12.5px; padding: 2px 6px; border-radius: 6px;
+    border: 1px solid var(--line); background: #26231f; color: var(--text);
+  }
+  code { border-color: transparent; background: var(--accent-soft); color: var(--accent); }
+  .note { margin-top: 16px; font-size: 13px; color: var(--muted); line-height: 1.7; }
+</style>
+</head>
+<body>
+<iframe src="S-01.html" tabindex="-1" aria-hidden="true"></iframe>
+<div class="backdrop">
+  <div class="dialog" role="dialog" aria-label="ヘルプ">
+    <div class="head"><h2>使い方</h2><button class="close">閉じる <kbd>Esc</kbd></button></div>
+    <div class="grid">
+      <section>
+        <h3>キー操作</h3>
+        <table>
+          <tr><td><kbd>Enter</kbd></td><td>計算して記録する</td></tr>
+          <tr><td><kbd>Esc</kbd></td><td>入力を消す</td></tr>
+          <tr><td><kbd>↑</kbd> <kbd>↓</kbd></td><td>前の式を呼び出す</td></tr>
+          <tr><td><kbd>Ctrl</kbd>/<kbd>⌘</kbd>+<kbd>C</kbd></td><td>結果をコピー（文字を選んでいないとき）</td></tr>
+          <tr><td><kbd>Ctrl</kbd>/<kbd>⌘</kbd>+<kbd>V</kbd></td><td>貼り付け（<code>1,234</code>・全角・<code>×÷</code> を直して入れる）</td></tr>
+          <tr><td><kbd>F1</kbd></td><td>このヘルプ</td></tr>
+        </table>
+      </section>
+      <section>
+        <h3>記録を使う</h3>
+        <table>
+          <tr><td><code>#1</code> / <code>ans</code></td><td>直前の結果</td></tr>
+          <tr><td><code>#2</code> <code>#3</code> …</td><td>2つ前・3つ前の結果（記録の番号は直近ほど小さい）</td></tr>
+          <tr><td><kbd>*</kbd> <kbd>/</kbd> <kbd>+</kbd> <kbd>^</kbd> で始める</td><td>先頭に <code>ans</code> が付く</td></tr>
+          <tr><td>記録の結果をクリック</td><td>その数値を入力</td></tr>
+          <tr><td>記録の式をクリック</td><td><code>(式)</code> を入力</td></tr>
+          <tr><td>記録の番号をクリック</td><td>その番号（<code>#2</code> など）を入力</td></tr>
+        </table>
+      </section>
+      <section>
+        <h3>演算子</h3>
+        <table>
+          <tr><td><code>+ - * /</code></td><td>四則（<code>x × ÷</code> も可）</td></tr>
+          <tr><td><code>^</code></td><td>べき乗 <code>2^10</code></td></tr>
+          <tr><td><code>!</code></td><td>階乗 <code>5!</code></td></tr>
+          <tr><td><code>%</code></td><td>百分の一 <code>50%</code> = 0.5</td></tr>
+          <tr><td><code>2π</code> <code>3(4+5)</code></td><td>× は省略できる</td></tr>
+          <tr><td><code>±</code> ボタン</td><td>式全体の符号を反転</td></tr>
+        </table>
+      </section>
+      <section>
+        <h3>関数・定数</h3>
+        <table>
+          <tr><td><code>sin cos tan</code></td><td>三角関数（DEG/RAD に従う）</td></tr>
+          <tr><td><code>asin acos atan</code></td><td>逆三角関数</td></tr>
+          <tr><td><code>log</code> / <code>ln</code></td><td>常用対数 / 自然対数</td></tr>
+          <tr><td><code>√</code> <code>sqrt</code> <code>abs</code></td><td>平方根・絶対値</td></tr>
+          <tr><td><code>π</code> <code>pi</code> <code>e</code></td><td>定数</td></tr>
+        </table>
+      </section>
+    </div>
+    <p class="note">記録はこのブラウザの中に保存されます（最大 1000 件）。記録に残る式では <code>#1</code> などは計算した時の値に置き換わります。別のパソコンへ移すときは「JSON に保存」で書き出し、移した先で「読み込む」を使ってください。</p>
+  </div>
+</div>
+</body>
+</html>

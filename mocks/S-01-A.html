@@ -1,0 +1,384 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ReCalc — S-01 モック</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* モック：S-01 電卓メイン画面（静的。下部の切替は確認用） */
+  :root {
+    --bg: #070a12;
+    --bg-glow: #0e1830;
+    --panel: #0f1522;
+    --panel-2: #141c2c;
+    --key: #182133;
+    --key-hover: #1f2a40;
+    --key-fn: #111929;
+    --line: #22304a;
+    --text: #eaf0fa;
+    --muted: #7d8aa6;
+    --dim: #4c5873;
+    --accent: #2ee6d6;
+    --accent-ink: #04201d;
+    --accent-soft: rgba(46, 230, 214, .12);
+    --op: #7cc4ff;
+    --danger: #ff6b81;
+    --mono: "JetBrains Mono", ui-monospace, "SF Mono", Consolas, monospace;
+    --sans: "Inter", "Hiragino Sans", "Yu Gothic UI", "Meiryo", system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background:
+      radial-gradient(1200px 600px at 20% -10%, var(--bg-glow), transparent 60%),
+      radial-gradient(900px 500px at 110% 110%, #0b1a24, transparent 60%),
+      var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    -webkit-font-smoothing: antialiased;
+  }
+  button { font: inherit; color: inherit; border: 0; background: none; cursor: pointer; }
+
+  .app {
+    height: 100vh;
+    display: grid;
+    grid-template-columns: minmax(520px, 1fr) 400px;
+    gap: 20px;
+    padding: 20px;
+    max-width: 1440px;
+    margin: 0 auto;
+  }
+  @media (max-width: 960px) {
+    .app { grid-template-columns: 1fr; height: auto; }
+  }
+
+  /* ---- 電卓側 ---- */
+  .calc {
+    display: flex; flex-direction: column; gap: 16px;
+    min-height: 0;
+  }
+  .topbar { display: flex; align-items: center; gap: 12px; }
+  .logo { font-weight: 700; font-size: 20px; letter-spacing: .02em; }
+  .logo b { color: var(--accent); }
+  .spacer { flex: 1; }
+  .seg {
+    display: inline-flex; padding: 3px; border-radius: 10px;
+    background: var(--panel); border: 1px solid var(--line);
+  }
+  .seg button {
+    padding: 6px 12px; border-radius: 7px; font-size: 13px; font-weight: 600;
+    color: var(--muted); font-family: var(--mono);
+  }
+  .seg button.on { background: var(--accent-soft); color: var(--accent); }
+  .icon-btn {
+    width: 34px; height: 34px; border-radius: 10px;
+    border: 1px solid var(--line); background: var(--panel);
+    color: var(--muted); font-weight: 700;
+  }
+  .icon-btn:hover { color: var(--text); border-color: var(--dim); }
+
+  .display {
+    position: relative;
+    background: linear-gradient(180deg, var(--panel-2), var(--panel));
+    border: 1px solid var(--line);
+    border-radius: 20px;
+    padding: 18px 24px 20px;
+    box-shadow: 0 20px 50px -20px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.03);
+  }
+  .expr-row { display: flex; align-items: center; gap: 12px; }
+  .expr-label {
+    font-size: 11px; font-weight: 600; color: var(--dim);
+    letter-spacing: .12em; text-transform: uppercase;
+  }
+  .expr {
+    flex: 1; width: 100%;
+    background: transparent; border: 0; outline: 0;
+    color: var(--text); caret-color: var(--accent);
+    font-family: var(--mono); font-size: 30px; font-weight: 500;
+    padding: 6px 0;
+  }
+  .preview {
+    text-align: right; font-family: var(--mono);
+    font-size: 22px; color: var(--muted); min-height: 30px;
+  }
+  .result {
+    text-align: right; font-family: var(--mono); font-weight: 700;
+    font-size: 72px; line-height: 1.1; letter-spacing: -.02em;
+    white-space: nowrap; overflow: hidden;
+    text-shadow: 0 0 32px rgba(46,230,214,.12);
+  }
+  .result .eq { color: var(--dim); font-weight: 400; margin-right: 12px; }
+  .result.error { font-size: 26px; font-family: var(--sans); color: var(--danger); font-weight: 600; text-shadow: none; padding: 22px 0; }
+  .display:focus-within { border-color: #2a4466; box-shadow: 0 0 0 4px rgba(46,230,214,.06), 0 20px 50px -20px rgba(0,0,0,.6); }
+
+  .keypad {
+    display: grid; grid-template-columns: repeat(5, 1fr);
+    gap: 10px; flex: 1; min-height: 0;
+    grid-template-rows: repeat(3, minmax(44px, .7fr)) repeat(4, minmax(56px, 1fr));
+  }
+  .k {
+    border-radius: 14px; background: var(--key);
+    border: 1px solid rgba(255,255,255,.04);
+    font-family: var(--mono); font-size: 26px; font-weight: 500;
+    box-shadow: 0 2px 0 rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.04);
+    transition: transform .06s, background .12s, box-shadow .12s;
+  }
+  .k:hover { background: var(--key-hover); }
+  .k:active, .k.flash { transform: translateY(1px) scale(.98); box-shadow: 0 0 0 rgba(0,0,0,0); }
+  .k.flash { background: var(--accent-soft); border-color: rgba(46,230,214,.5); color: var(--accent); }
+  .k.fn { background: var(--key-fn); font-size: 18px; color: #b6c2da; }
+  .k.op { color: var(--op); font-size: 30px; }
+  .k.ctl { color: var(--muted); font-size: 18px; font-family: var(--sans); font-weight: 600; }
+  .k.ac { color: var(--danger); }
+  .k.eq {
+    grid-row: span 2; background: var(--accent); color: var(--accent-ink);
+    font-size: 36px; font-weight: 700;
+    box-shadow: 0 10px 30px -10px rgba(46,230,214,.6), inset 0 1px 0 rgba(255,255,255,.3);
+  }
+  .k.eq:hover { background: #4cf0e1; }
+  .k.zero { grid-column: span 2; }
+  .k sup { font-size: .6em; }
+
+  /* ---- 記録側 ---- */
+  .history {
+    display: flex; flex-direction: column; min-height: 0;
+    background: var(--panel); border: 1px solid var(--line); border-radius: 20px;
+    overflow: hidden;
+  }
+  .h-head { padding: 16px 18px 12px; border-bottom: 1px solid var(--line); }
+  .h-title { display: flex; align-items: baseline; gap: 10px; }
+  .h-title h2 { margin: 0; font-size: 16px; font-weight: 600; }
+  .h-title span { font-size: 12px; color: var(--dim); font-family: var(--mono); }
+  .h-actions { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+  .chip {
+    font-size: 12px; font-weight: 600; padding: 6px 10px; border-radius: 8px;
+    border: 1px solid var(--line); color: var(--muted);
+  }
+  .chip:hover { color: var(--text); border-color: var(--dim); }
+  .chip.danger:hover { color: var(--danger); border-color: rgba(255,107,129,.5); }
+
+  .h-list { list-style: none; margin: 0; padding: 8px; overflow: auto; flex: 1; }
+  .rec {
+    position: relative; padding: 10px 12px; border-radius: 12px;
+    border: 1px solid transparent;
+  }
+  .rec + .rec { margin-top: 2px; }
+  .rec:hover { background: var(--panel-2); border-color: var(--line); }
+  .rec .top { display: flex; align-items: center; gap: 8px; }
+  .no {
+    font-family: var(--mono); font-size: 12px; font-weight: 700;
+    color: var(--accent); background: var(--accent-soft);
+    padding: 2px 7px; border-radius: 6px;
+  }
+  .time { margin-left: auto; font-size: 11px; color: var(--dim); font-family: var(--mono); }
+  .rexpr {
+    display: block; margin-top: 6px; font-family: var(--mono); font-size: 15px; color: var(--muted);
+    text-align: left; word-break: break-all;
+  }
+  .rval {
+    display: block; margin-left: auto; font-family: var(--mono); font-size: 24px; font-weight: 700;
+    text-align: right;
+  }
+  .rval::before { content: "= "; color: var(--dim); font-weight: 400; }
+  .clickable { border-radius: 4px; }
+  .clickable:hover { text-decoration: underline; text-decoration-color: var(--accent); text-underline-offset: 4px; color: var(--text); }
+  .rec .tools {
+    position: absolute; right: 10px; top: 8px; display: none; gap: 4px;
+    background: var(--panel-2);
+  }
+  .rec:hover .tools { display: flex; }
+  .rec:hover .time { visibility: hidden; }
+  .tool {
+    width: 26px; height: 26px; border-radius: 7px; color: var(--muted); font-size: 13px;
+    border: 1px solid var(--line);
+  }
+  .tool:hover { color: var(--text); }
+  .tool.del:hover { color: var(--danger); }
+  .day { font-size: 11px; color: var(--dim); padding: 12px 12px 4px; letter-spacing: .08em; }
+  .empty {
+    margin: auto; padding: 40px 24px; text-align: center; color: var(--dim); font-size: 14px; line-height: 1.8;
+  }
+  .empty kbd {
+    font-family: var(--mono); font-size: 12px; padding: 2px 6px; border-radius: 6px;
+    border: 1px solid var(--line); color: var(--muted);
+  }
+
+  .toast {
+    position: fixed; left: 50%; top: 20px; transform: translateX(-50%);
+    background: #1c2a3f; border: 1px solid #2c4262; color: var(--text);
+    padding: 10px 16px; border-radius: 12px; font-size: 14px;
+    box-shadow: 0 12px 30px -10px rgba(0,0,0,.6);
+  }
+  .toast b { color: var(--accent); }
+
+  /* 確認用の切替（実装には含めない） */
+  .mockbar {
+    position: fixed; right: 16px; bottom: 16px; display: flex; gap: 6px;
+    background: #000c; padding: 6px; border-radius: 10px; font-size: 12px;
+  }
+  .mockbar button { padding: 4px 8px; border-radius: 6px; color: #aaa; }
+  .mockbar button.on { background: #333; color: #fff; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ===== 電卓 ===== -->
+  <main class="calc">
+    <div class="topbar">
+      <div class="logo">Re<b>Calc</b></div>
+      <div class="spacer"></div>
+      <div class="seg" title="角度の単位">
+        <button class="on">DEG</button><button>RAD</button>
+      </div>
+      <button class="icon-btn" title="ヘルプ (F1)">?</button>
+    </div>
+
+    <section class="display">
+      <div class="expr-row">
+        <span class="expr-label">式</span>
+        <input id="expr" class="expr" value="ans*12" autofocus spellcheck="false" autocomplete="off">
+      </div>
+      <div class="preview" id="preview">= 26,136</div>
+      <div class="result" id="result"><span class="eq">=</span>2,178</div>
+    </section>
+
+    <section class="keypad">
+      <button class="k fn">sin</button>
+      <button class="k fn">cos</button>
+      <button class="k fn">tan</button>
+      <button class="k fn">ln</button>
+      <button class="k fn">log</button>
+
+      <button class="k fn">√</button>
+      <button class="k fn">x<sup>y</sup></button>
+      <button class="k fn">n!</button>
+      <button class="k fn">π</button>
+      <button class="k fn">e</button>
+
+      <button class="k fn">(</button>
+      <button class="k fn">)</button>
+      <button class="k fn">%</button>
+      <button class="k fn">ans</button>
+      <button class="k ctl" title="1文字消す (Backspace)">⌫</button>
+
+      <button class="k">7</button>
+      <button class="k">8</button>
+      <button class="k">9</button>
+      <button class="k op">÷</button>
+      <button class="k ctl ac" title="入力を消す (Esc)">AC</button>
+
+      <button class="k">4</button>
+      <button class="k">5</button>
+      <button class="k flash">6</button>
+      <button class="k op">×</button>
+      <button class="k ctl" title="結果をコピー (Ctrl/⌘+C)">⧉</button>
+
+      <button class="k">1</button>
+      <button class="k">2</button>
+      <button class="k">3</button>
+      <button class="k op">−</button>
+      <button class="k eq" title="計算して記録 (Enter)">=</button>
+
+      <button class="k zero">0</button>
+      <button class="k">.</button>
+      <button class="k op">+</button>
+    </section>
+  </main>
+
+  <!-- ===== 記録 ===== -->
+  <aside class="history">
+    <div class="h-head">
+      <div class="h-title"><h2>記録</h2><span id="count">5 件</span></div>
+      <div class="h-actions">
+        <button class="chip">⤓ JSON</button>
+        <button class="chip">⤓ CSV</button>
+        <button class="chip">⤒ 読み込み</button>
+        <span class="spacer"></span>
+        <button class="chip danger">すべて消す</button>
+      </div>
+    </div>
+    <ul class="h-list" id="list">
+      <li class="day">今日</li>
+      <li class="rec">
+        <div class="top"><button class="no clickable" title="#5 を入力">#5</button><span class="time">10:44</span>
+          <div class="tools"><button class="tool" title="式 = 結果 をコピー">⧉</button><button class="tool del" title="削除">✕</button></div></div>
+        <button class="rexpr clickable" title="(式) を入力">1980*1.1</button>
+        <button class="rval clickable" title="結果を入力">2,178</button>
+      </li>
+      <li class="rec">
+        <div class="top"><button class="no clickable">#4</button><span class="time">10:43</span>
+          <div class="tools"><button class="tool">⧉</button><button class="tool del">✕</button></div></div>
+        <button class="rexpr clickable">sin(30)+cos(60)</button>
+        <button class="rval clickable">1</button>
+      </li>
+      <li class="rec">
+        <div class="top"><button class="no clickable">#3</button><span class="time">10:42</span>
+          <div class="tools"><button class="tool">⧉</button><button class="tool del">✕</button></div></div>
+        <button class="rexpr clickable">#1/3</button>
+        <button class="rval clickable">41,652</button>
+      </li>
+      <li class="day">10/22</li>
+      <li class="rec">
+        <div class="top"><button class="no clickable">#2</button><span class="time">10/22 21:15</span>
+          <div class="tools"><button class="tool">⧉</button><button class="tool del">✕</button></div></div>
+        <button class="rexpr clickable">2^10*√16</button>
+        <button class="rval clickable">4,096</button>
+      </li>
+      <li class="rec">
+        <div class="top"><button class="no clickable">#1</button><span class="time">10/22 21:10</span>
+          <div class="tools"><button class="tool">⧉</button><button class="tool del">✕</button></div></div>
+        <button class="rexpr clickable">123456+1500</button>
+        <button class="rval clickable">124,956</button>
+      </li>
+    </ul>
+  </aside>
+</div>
+
+<div class="toast" id="toast"><b>✓</b> コピーしました <span style="color:var(--muted);font-family:var(--mono)">2178</span></div>
+
+<div class="mockbar">
+  <button class="on" data-s="normal">通常</button>
+  <button data-s="error">エラー</button>
+  <button data-s="empty">記録0件</button>
+  <button data-s="long">長い結果</button>
+</div>
+
+<script>
+  // 確認用：表示状態の切替だけ（実装には含めない）
+  const listHTML = document.getElementById('list').innerHTML;
+  const states = {
+    normal() {
+      expr.value = 'ans*12'; preview.textContent = '= 26,136';
+      result.className = 'result'; result.innerHTML = '<span class="eq">=</span>2,178';
+      list.innerHTML = listHTML; count.textContent = '5 件'; toast.style.display = '';
+    },
+    error() {
+      expr.value = '(2+3'; preview.textContent = '';
+      result.className = 'result error'; result.textContent = 'かっこが閉じていません';
+      list.innerHTML = listHTML; count.textContent = '5 件'; toast.style.display = 'none';
+    },
+    empty() {
+      expr.value = ''; preview.textContent = '';
+      result.className = 'result'; result.innerHTML = '<span class="eq">=</span>0';
+      list.innerHTML = '<li class="empty"><kbd>Enter</kbd> で計算すると、<br>ここに記録が残ります</li>';
+      count.textContent = '0 件'; toast.style.display = 'none';
+    },
+    long() {
+      expr.value = '25!'; preview.textContent = '';
+      result.className = 'result'; result.style.fontSize = '44px';
+      result.innerHTML = '<span class="eq">=</span>1.5511210043331e+25';
+      list.innerHTML = listHTML; count.textContent = '5 件'; toast.style.display = 'none';
+    },
+  };
+  document.querySelectorAll('.mockbar button').forEach(b => b.onclick = () => {
+    document.querySelectorAll('.mockbar button').forEach(x => x.classList.toggle('on', x === b));
+    result.style.fontSize = '';
+    states[b.dataset.s]();
+  });
+</script>
+</body>
+</html>

@@ -1,0 +1,190 @@
+/* ReCalc デザイン一式。承認済みモック mocks/S-01.html（案C：工業デザイン）をそのまま移したもの */
+/* 主役は丸く盛り上がったキーの並び。ほかは静かに */
+:root {
+  --room: #8d8579;
+  --body: #34302b;
+  --body-hi: #3e3933;
+  --key: #26231f;
+  --key-legend: #efe9dd;
+  --key-fn: #57514a;
+  --yellow: #f0bd2c;
+  --window: #1b1a17;
+  --digit: #f3eee4;
+  --muted: #a39b8e;
+  --dim: #6c655b;
+  --error: #ff9a8a;
+  --result-size: 88px;     /* 結果の文字の大きさ（長いときは app.js が最小 36px まで縮める） */
+  --sans: "Archivo", "Hiragino Sans", "Yu Gothic UI", "Meiryo", system-ui, sans-serif;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body {
+  background: radial-gradient(1000px 700px at 30% 20%, #9a9286, var(--room));
+  font-family: var(--sans); color: var(--key-legend);
+  font-variant-numeric: tabular-nums;
+}
+button { font: inherit; color: inherit; border: 0; background: none; cursor: pointer; }
+button:focus-visible { outline: 2px solid var(--yellow); outline-offset: 3px; }
+
+.stage { min-height: 100vh; display: grid; place-items: center; padding: 24px; }
+.device {
+  width: min(1060px, 100%);
+  display: grid; grid-template-columns: 640px 1fr;
+  background: linear-gradient(160deg, var(--body-hi), var(--body) 45%);
+  border-radius: 28px;
+  box-shadow: 0 40px 70px -30px rgba(30,24,16,.7), inset 0 1px 0 rgba(255,255,255,.08);
+  overflow: hidden;
+}
+@media (max-width: 960px) { .device { grid-template-columns: 1fr; } }
+
+.calc { padding: 22px 34px 26px; display: flex; flex-direction: column; gap: 18px; min-width: 0; }
+.row { display: flex; align-items: center; gap: 16px; }
+.name { font-size: 15px; font-weight: 600; color: var(--muted); letter-spacing: .03em; }
+.spacer { flex: 1; }
+.unit { display: flex; gap: 14px; font-size: 13px; color: var(--muted); }
+.unit button { display: inline-flex; align-items: center; gap: 6px; }
+.unit button::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: #1f1c19; box-shadow: inset 0 1px 2px #000; }
+.unit button.on { color: var(--key-legend); }
+.unit button.on::before { background: var(--yellow); box-shadow: 0 0 6px rgba(240,189,44,.6); }
+.help { font-size: 13px; color: var(--muted); }
+.help:hover { color: var(--key-legend); }
+
+.window {
+  background: var(--window); border-radius: 14px; padding: 16px 24px 18px;
+  box-shadow: inset 0 3px 10px rgba(0,0,0,.7), 0 1px 0 rgba(255,255,255,.07);
+}
+.w-top { display: flex; align-items: baseline; gap: 16px; }
+.expr {
+  flex: 1; min-width: 0; background: transparent; border: 0; outline: 0;
+  font: 400 28px/1.3 var(--sans); color: var(--muted); caret-color: var(--yellow);
+}
+.preview { font-size: 22px; color: #6f685e; white-space: nowrap; }
+.result {
+  text-align: right; font-size: var(--result-size); font-weight: 300; line-height: 1.05; color: var(--digit);
+  letter-spacing: -.01em; white-space: nowrap; overflow: hidden;
+}
+/* エラー（F-02-6）：結果欄に赤系の文。高さは結果と同じにして画面が跳ねないようにする */
+.result.error {
+  font-size: 26px; font-weight: 400; color: var(--error); letter-spacing: 0;
+  line-height: calc(var(--result-size) * 1.05); white-space: normal;
+}
+
+/* 主役：丸いキー */
+.keys {
+  display: grid; grid-template-columns: repeat(5, 1fr);
+  gap: 10px 0; justify-items: center; align-items: center;
+}
+.k {
+  --size: 82px;
+  width: var(--size); height: var(--size); border-radius: 50%;
+  background: radial-gradient(circle at 50% 35%, #3a3631, var(--key) 70%);
+  color: var(--key-legend); font-size: 28px; font-weight: 400;
+  box-shadow: 0 6px 10px -2px rgba(0,0,0,.55), 0 1px 0 rgba(255,255,255,.08) inset, 0 -2px 4px rgba(0,0,0,.4) inset;
+  transition: transform .06s, box-shadow .06s;
+}
+.k:active, .k.pressed {
+  transform: translateY(2px);
+  background: radial-gradient(circle at 50% 65%, #3a3631, var(--key) 70%);
+  box-shadow: 0 2px 3px rgba(0,0,0,.5), 0 2px 6px rgba(0,0,0,.6) inset;
+}
+.k.fn {
+  --size: 60px; font-size: 16px; color: #e3dccd;
+  background: radial-gradient(circle at 50% 35%, #69625a, var(--key-fn) 70%);
+}
+.k.fn.bs { font-size: 20px; }   /* ⌫ は字形が小さいので、ほかの関数キーより大きくする */
+.k.op { color: var(--yellow); font-size: 32px; }
+.k.ctl { font-size: 15px; color: var(--muted); }
+.k.ctl.sign { font-size: 28px; }   /* ± は記号なので数字と同じ大きさ（色は操作キーのまま） */
+.k.eq {
+  background: radial-gradient(circle at 50% 35%, #ffd65c, var(--yellow) 70%);
+  color: #3a2c05; font-size: 36px; font-weight: 600;
+}
+.k sup { font-size: .6em; }
+@media (prefers-reduced-motion: reduce) {
+  .k { transition: none; }
+  .k:active, .k.pressed { transform: none; }
+}
+
+/* 記録：本体と同じ面に彫り込まれた一覧。静かに */
+.log {
+  border-left: 1px solid rgba(0,0,0,.35);
+  box-shadow: inset 1px 0 0 rgba(255,255,255,.04);
+  display: flex; flex-direction: column; min-height: 0; min-width: 0;
+  background: rgba(0,0,0,.12);
+}
+@media (max-width: 960px) {
+  .log { border-left: 0; border-top: 1px solid rgba(0,0,0,.35); box-shadow: inset 0 1px 0 rgba(255,255,255,.04); }
+}
+.log-head { display: flex; align-items: baseline; padding: 26px 24px 12px; gap: 10px; }
+.log-head h2 { margin: 0; font-size: 15px; font-weight: 600; color: var(--muted); }
+.log-head .n { font-size: 13px; color: #7c7468; }
+.list { list-style: none; margin: 0; padding: 0 12px; overflow: auto; flex: 1; }
+/* 2段組では記録の高さを電卓側に合わせ、記録が増えたら一覧の中だけ流れるようにする */
+@media (min-width: 961px) { .log { height: 0; min-height: 100%; } }
+@media (max-width: 960px) { .list { max-height: 480px; } }
+.rec {
+  padding: 12px; display: grid; grid-template-columns: auto 1fr; gap: 2px 12px;
+  /* 本体に彫り込んだような区切り線（暗い線＋下に薄い明るい線） */
+  border-bottom: 1px solid rgba(0,0,0,.42);
+  box-shadow: 0 1px 0 rgba(255,255,255,.05);
+  position: relative;
+}
+.rec:last-child { border-bottom: 0; box-shadow: none; }
+.rec:hover { background: rgba(255,255,255,.04); }
+.rec .no { grid-row: span 2; align-self: start; font-size: 13px; color: #7c7468; padding-top: 3px; }
+.rec .no:hover { color: var(--yellow); }
+.rec .ex { text-align: right; font-size: 18px; color: var(--muted); word-break: break-all; }
+.rec .val { text-align: right; font-size: 26px; font-weight: 400; color: var(--digit); word-break: break-all; }
+.rec .ex:hover, .rec .val:hover { color: var(--yellow); }
+.rec .when { grid-column: 2; text-align: right; font-size: 11px; color: var(--dim); }
+.rec .tools { position: absolute; left: 12px; bottom: 10px; display: none; gap: 4px; }
+.rec:hover .tools, .rec:focus-within .tools { display: flex; }
+.tool { font-size: 11px; color: var(--muted); padding: 3px 7px; border-radius: 6px; background: rgba(0,0,0,.25); }
+.tool:hover { color: var(--key-legend); }
+.tool.del:hover { color: var(--error); }
+.sep { font-size: 12px; color: var(--dim); padding: 14px 12px 4px; }
+.empty { font-size: 13px; color: var(--dim); padding: 14px 12px; line-height: 1.7; }
+.log-foot { display: flex; gap: 4px; flex-wrap: wrap; padding: 14px 18px 22px; border-top: 1px solid rgba(0,0,0,.3); }
+.lb { font-size: 12px; color: var(--muted); padding: 7px 10px; border-radius: 8px; }
+.lb:hover { background: rgba(255,255,255,.06); color: var(--key-legend); }
+.lb.danger:hover { color: var(--error); }
+
+/* S-02 ヘルプ：承認済みモック mocks/S-02.html。S-01 を暗くぼかした上に重ねる */
+.help-dialog {
+  width: min(860px, calc(100% - 48px)); max-height: calc(100vh - 48px); overflow: auto;
+  background: linear-gradient(180deg, var(--body-hi), var(--body));
+  border: 1px solid rgba(0,0,0,.42); border-radius: 20px; color: var(--key-legend);
+  font-family: var(--sans); padding: 24px 28px 28px;
+  box-shadow: 0 40px 80px -20px rgba(0,0,0,.8);
+}
+.help-dialog::backdrop { background: rgba(30,24,16,.6); backdrop-filter: blur(6px); }
+.help-dialog .head { display: flex; align-items: center; margin-bottom: 16px; }
+.help-dialog h2 { margin: 0; font-size: 20px; }
+.help-dialog .close {
+  margin-left: auto; font-size: 12px; color: var(--muted);
+  border: 1px solid rgba(0,0,0,.42); border-radius: 8px; padding: 6px 10px;
+}
+.help-dialog .close:hover { color: var(--key-legend); }
+.help-dialog .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px 28px; }
+@media (max-width: 720px) { .help-dialog .grid { grid-template-columns: 1fr; } }
+.help-dialog h3 { margin: 0 0 8px; font-size: 14px; color: var(--yellow); }
+.help-dialog table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.help-dialog td { padding: 6px 0; border-bottom: 1px solid rgba(0,0,0,.42); box-shadow: 0 1px 0 rgba(255,255,255,.05); vertical-align: top; }
+.help-dialog td:first-child { width: 44%; white-space: nowrap; }
+.help-dialog td:last-child { color: var(--muted); }
+.help-dialog kbd, .help-dialog code {
+  font-family: var(--sans); font-size: 12.5px; padding: 2px 6px; border-radius: 6px;
+  border: 1px solid rgba(0,0,0,.42); background: var(--key); color: var(--key-legend);
+}
+.help-dialog code { border-color: transparent; background: rgba(240,189,44,.12); color: var(--yellow); }
+.help-dialog .note { margin: 16px 0 0; font-size: 13px; color: var(--muted); line-height: 1.7; }
+
+/* 通知（F-05-4）：画面上部の中央に短く出る */
+.toast {
+  position: fixed; top: 16px; left: 50%; transform: translate(-50%, -8px);
+  background: var(--window); color: var(--key-legend); font-size: 13px;
+  padding: 8px 16px; border-radius: 999px; box-shadow: 0 8px 20px rgba(0,0,0,.4);
+  opacity: 0; pointer-events: none; transition: opacity .2s, transform .2s;
+}
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+@media (prefers-reduced-motion: reduce) { .toast { transition: none; } }

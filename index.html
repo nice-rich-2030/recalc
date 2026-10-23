@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ReCalc</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css">
+<script defer src="js/format.js"></script>
+<script defer src="js/normalize.js"></script>
+<script defer src="js/calc.js"></script>
+<script defer src="js/store.js"></script>
+<script defer src="js/app.js"></script>
+</head>
+<body>
+<div class="stage">
+  <div class="device">
+    <main class="calc">
+      <div class="row">
+        <div class="name">ReCalc</div>
+        <div class="spacer"></div>
+        <div class="unit" role="radiogroup" aria-label="角度の単位">
+          <button id="deg" role="radio" data-angle="deg">DEG</button><button id="rad" role="radio" data-angle="rad">RAD</button>
+        </div>
+        <button class="help" id="help-open">使い方</button>
+      </div>
+
+      <div class="window">
+        <div class="w-top">
+          <input class="expr" id="expr" maxlength="200" autofocus spellcheck="false" autocomplete="off" aria-label="式">
+          <span class="preview" id="preview" aria-hidden="true"></span>
+        </div>
+        <div class="result" id="result" aria-live="polite">0</div>
+      </div>
+
+      <section class="keys" id="keys" aria-label="キー">
+        <button class="k fn" data-insert="sin(">sin</button><button class="k fn" data-insert="cos(">cos</button><button class="k fn" data-insert="tan(">tan</button><button class="k fn" data-insert="ln(">ln</button><button class="k fn" data-insert="log(">log</button>
+        <button class="k fn" data-insert="√(">√</button><button class="k fn" data-insert="^" aria-label="べき乗">x<sup>y</sup></button><button class="k fn" data-insert="!" aria-label="階乗">n!</button><button class="k fn" data-insert="π">π</button><button class="k fn" data-insert="e">e</button>
+        <button class="k fn" data-insert="(">(</button><button class="k fn" data-insert=")">)</button><button class="k fn" data-insert="%">%</button><button class="k fn" data-insert="ans">ans</button><button class="k fn bs" data-action="backspace" data-key="Backspace" aria-label="1文字消す">⌫</button>
+        <button class="k" data-insert="7">7</button><button class="k" data-insert="8">8</button><button class="k" data-insert="9">9</button><button class="k op" data-insert="/" aria-label="割る">÷</button><button class="k ctl" data-action="clear" data-key="Escape">AC</button>
+        <button class="k" data-insert="4">4</button><button class="k" data-insert="5">5</button><button class="k" data-insert="6">6</button><button class="k op" data-insert="×" aria-label="掛ける">×</button><button class="k ctl" data-action="copy">コピー</button>
+        <button class="k" data-insert="1">1</button><button class="k" data-insert="2">2</button><button class="k" data-insert="3">3</button><button class="k op" data-insert="-" aria-label="引く">−</button><button class="k op" data-insert="+">+</button>
+        <button class="k" data-insert="0">0</button><button class="k" data-insert="00">00</button><button class="k" data-insert=".">.</button><button class="k ctl sign" data-action="negate" aria-label="符号を反転">±</button><button class="k eq" data-action="commit" data-key="Enter">=</button>
+      </section>
+    </main>
+
+    <aside class="log" aria-label="記録">
+      <div class="log-head"><h2>記録</h2><span class="n" id="count">0件</span></div>
+      <ul class="list" id="list"></ul>
+      <div class="log-foot">
+        <button class="lb" id="export-json">JSON に保存</button><button class="lb" id="export-csv">CSV に保存</button><button class="lb" id="import">読み込む</button>
+        <span class="spacer"></span><button class="lb danger" id="clear-all">すべて消す</button>
+        <input type="file" id="import-file" accept=".json,application/json" hidden>
+      </div>
+    </aside>
+  </div>
+</div>
+<dialog class="help-dialog" id="help" aria-labelledby="help-title">
+  <div class="head"><h2 id="help-title">使い方</h2><button class="close" id="help-close">閉じる <kbd>Esc</kbd></button></div>
+  <div class="grid">
+    <section>
+      <h3>キー操作</h3>
+      <table>
+        <tr><td><kbd>Enter</kbd></td><td>計算して記録する</td></tr>
+        <tr><td><kbd>Esc</kbd></td><td>入力を消す</td></tr>
+        <tr><td><kbd>↑</kbd> <kbd>↓</kbd></td><td>前の式を呼び出す</td></tr>
+        <tr><td><kbd>Ctrl</kbd>/<kbd>⌘</kbd>+<kbd>C</kbd></td><td>結果をコピー（文字を選んでいないとき）</td></tr>
+        <tr><td><kbd>Ctrl</kbd>/<kbd>⌘</kbd>+<kbd>V</kbd></td><td>貼り付け（<code>1,234</code>・全角・<code>×÷</code> を直して入れる）</td></tr>
+        <tr><td><kbd>F1</kbd></td><td>このヘルプ</td></tr>
+      </table>
+    </section>
+    <section>
+      <h3>記録を使う</h3>
+      <table>
+        <tr><td><code>#1</code> / <code>ans</code></td><td>直前の結果</td></tr>
+        <tr><td><code>#2</code> <code>#3</code> …</td><td>2つ前・3つ前の結果（記録の番号は直近ほど小さい）</td></tr>
+        <tr><td><kbd>*</kbd> <kbd>/</kbd> <kbd>+</kbd> <kbd>^</kbd> で始める</td><td>先頭に <code>ans</code> が付く</td></tr>
+        <tr><td>記録の結果をクリック</td><td>その数値を入力</td></tr>
+        <tr><td>記録の式をクリック</td><td><code>(式)</code> を入力</td></tr>
+        <tr><td>記録の番号をクリック</td><td>その番号（<code>#2</code> など）を入力</td></tr>
+      </table>
+    </section>
+    <section>
+      <h3>演算子</h3>
+      <table>
+        <tr><td><code>+ - * /</code></td><td>四則（<code>x × ÷</code> も可）</td></tr>
+        <tr><td><code>^</code></td><td>べき乗 <code>2^10</code></td></tr>
+        <tr><td><code>!</code></td><td>階乗 <code>5!</code></td></tr>
+        <tr><td><code>%</code></td><td>百分の一 <code>50%</code> = 0.5</td></tr>
+        <tr><td><code>2π</code> <code>3(4+5)</code></td><td>× は省略できる</td></tr>
+        <tr><td><code>±</code> ボタン</td><td>式全体の符号を反転</td></tr>
+      </table>
+    </section>
+    <section>
+      <h3>関数・定数</h3>
+      <table>
+        <tr><td><code>sin cos tan</code></td><td>三角関数（DEG/RAD に従う）</td></tr>
+        <tr><td><code>asin acos atan</code></td><td>逆三角関数</td></tr>
+        <tr><td><code>log</code> / <code>ln</code></td><td>常用対数 / 自然対数</td></tr>
+        <tr><td><code>√</code> <code>sqrt</code> <code>abs</code></td><td>平方根・絶対値</td></tr>
+        <tr><td><code>π</code> <code>pi</code> <code>e</code></td><td>定数</td></tr>
+      </table>
+    </section>
+  </div>
+  <p class="note">記録はこのブラウザの中に保存されます（最大 1000 件）。記録に残る式では <code>#1</code> などは計算した時の値に置き換わります。別のパソコンへ移すときは「JSON に保存」で書き出し、移した先で「読み込む」を使ってください。</p>
+</dialog>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+</body>
+</html>

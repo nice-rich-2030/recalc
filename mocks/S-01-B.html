@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ReCalc — S-01 案B 事務機とテープ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@400;500;600;700&family=DotGothic16&display=swap" rel="stylesheet">
+<style>
+  /* 案B：事務機とテープ。主役はロール紙のテープ。本体と液晶は静かに */
+  :root {
+    --desk: #d6d9d4;
+    --body: #eef0ec;
+    --body-edge: #c3c8c1;
+    --key: #fbfbf8;
+    --key-legend: #23262b;
+    --key-fn: #dde1db;
+    --key-op: #5d636b;
+    --lcd: #c3cdb2;
+    --lcd-ink: #1b2415;
+    --paper: #fffffc;
+    --ink: #28307a;
+    --red: #c3262c;
+    --sans: "Barlow Semi Condensed", "Hiragino Sans", "Yu Gothic UI", "Meiryo", system-ui, sans-serif;
+    --dot: "DotGothic16", "Hiragino Sans", monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: var(--desk);
+    color: var(--key-legend);
+    font-family: var(--sans);
+    font-variant-numeric: tabular-nums;
+  }
+  button { font: inherit; color: inherit; border: 0; background: none; cursor: pointer; }
+  button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+
+  .desk {
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: minmax(540px, 1fr) 380px;
+    gap: 32px;
+    padding: 24px 32px;
+    max-width: 1400px;
+    margin: 0 auto;
+    align-items: stretch;
+  }
+  @media (max-width: 960px) { .desk { grid-template-columns: 1fr; } }
+
+  /* ---- 本体 ---- */
+  .machine {
+    background: linear-gradient(180deg, #f6f7f4, var(--body) 30%);
+    border: 1px solid var(--body-edge);
+    border-radius: 18px 18px 26px 26px;
+    padding: 18px 22px 24px;
+    box-shadow: 0 1px 0 #fff inset, 0 24px 40px -24px rgba(40,48,40,.45), 0 2px 0 var(--body-edge);
+    display: flex; flex-direction: column; gap: 16px;
+  }
+  .plate { display: flex; align-items: center; gap: 14px; }
+  .brand { font-size: 17px; font-weight: 700; letter-spacing: .04em; color: #4a5048; }
+  .spacer { flex: 1; }
+  .slide {
+    display: inline-flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; color: #6a7068;
+  }
+  .slide .track {
+    width: 54px; height: 22px; border-radius: 11px; background: #cfd4cc;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,.25); position: relative;
+  }
+  .slide .track::after {
+    content: ""; position: absolute; top: 2px; left: 3px; width: 24px; height: 18px; border-radius: 9px;
+    background: linear-gradient(#fff, #e6e9e3); box-shadow: 0 1px 2px rgba(0,0,0,.3);
+  }
+  .slide .on { color: var(--key-legend); }
+  .help {
+    width: 32px; height: 32px; border-radius: 50%; background: var(--key-fn);
+    font-weight: 700; color: #4a5048; box-shadow: 0 2px 0 var(--body-edge);
+  }
+
+  /* 液晶 */
+  .lcd-frame {
+    background: #3d433c; border-radius: 12px; padding: 10px;
+    box-shadow: inset 0 2px 6px rgba(0,0,0,.5);
+  }
+  .lcd {
+    background:
+      linear-gradient(180deg, rgba(255,255,255,.18), transparent 40%),
+      var(--lcd);
+    border-radius: 6px; padding: 12px 20px 10px;
+    color: var(--lcd-ink);
+    box-shadow: inset 0 3px 8px rgba(0,0,0,.25);
+  }
+  .lcd-top { display: flex; align-items: baseline; gap: 16px; min-height: 40px; }
+  .expr {
+    flex: 1; min-width: 0; background: transparent; border: 0; outline: 0;
+    font: 500 30px/1.2 var(--sans); color: var(--lcd-ink); caret-color: var(--lcd-ink);
+    letter-spacing: .02em;
+  }
+  .preview { font-size: 24px; font-weight: 500; opacity: .5; white-space: nowrap; }
+  .result {
+    text-align: right; font-size: 84px; font-weight: 600; line-height: 1;
+    letter-spacing: .01em; padding-top: 4px;
+    text-shadow: 2px 2px 0 rgba(27,36,21,.12);
+  }
+  .indicators { display: flex; gap: 14px; font-size: 13px; font-weight: 700; margin-top: 4px; }
+  .indicators span { opacity: .14; }
+  .indicators span.lit { opacity: .8; }
+
+  /* キー */
+  .keys {
+    display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px 12px; flex: 1;
+    grid-template-rows: repeat(3, minmax(40px, .65fr)) repeat(4, minmax(56px, 1fr));
+  }
+  .k {
+    border-radius: 10px 10px 12px 12px;
+    background: linear-gradient(180deg, #ffffff, var(--key));
+    color: var(--key-legend);
+    font-size: 30px; font-weight: 500;
+    box-shadow: 0 3px 0 #c9cec6, 0 4px 6px -2px rgba(0,0,0,.25);
+    transition: transform .05s, box-shadow .05s;
+  }
+  .k:active, .k.pressed { transform: translateY(3px); box-shadow: 0 0 0 #c9cec6, 0 1px 2px rgba(0,0,0,.2); }
+  .k.fn { background: linear-gradient(180deg, #e7eae4, var(--key-fn)); font-size: 18px; color: #3e443d; box-shadow: 0 3px 0 #b9bfb6, 0 4px 6px -2px rgba(0,0,0,.2); }
+  .k.op { background: linear-gradient(180deg, #6d737b, var(--key-op)); color: #fff; box-shadow: 0 3px 0 #3f444a, 0 4px 6px -2px rgba(0,0,0,.3); }
+  .k.ctl { font-size: 18px; font-weight: 600; }
+  .k.ac { color: var(--red); }
+  .k.eq {
+    grid-row: span 2; background: linear-gradient(180deg, #d63a3f, var(--red)); color: #fff;
+    font-size: 40px; box-shadow: 0 3px 0 #86181c, 0 4px 6px -2px rgba(0,0,0,.3);
+  }
+  .k.zero { grid-column: span 2; }
+  .k sup { font-size: .6em; }
+
+  /* ---- テープ ---- */
+  .roll {
+    display: flex; flex-direction: column; min-height: 0; position: relative;
+  }
+  .tape-wrap {
+    flex: 1; min-height: 0; position: relative;
+    filter: drop-shadow(0 10px 14px rgba(40,48,40,.25));
+  }
+  .tape {
+    position: absolute; inset: 0;
+    background: var(--paper);
+    /* 上端は破った跡 */
+    -webkit-mask: linear-gradient(#000, #000) 0 14px / 100% calc(100% - 14px) no-repeat,
+      conic-gradient(from -45deg at 50% 100%, #000 90deg, transparent 0) 0 0 / 16px 14px repeat-x;
+            mask: linear-gradient(#000, #000) 0 14px / 100% calc(100% - 14px) no-repeat,
+      conic-gradient(from -45deg at 50% 100%, #000 90deg, transparent 0) 0 0 / 16px 14px repeat-x;
+    overflow: auto;
+    display: flex; flex-direction: column; justify-content: flex-end;
+    padding: 30px 26px 14px;
+    font-family: var(--dot); color: var(--ink);
+  }
+  .line { padding: 10px 0 12px; border-bottom: 1px dashed rgba(40,48,122,.22); }
+  .line:last-child { border-bottom: 0; }
+  .meta { display: flex; font-size: 13px; opacity: .65; }
+  .meta .t { margin-left: auto; }
+  .meta button { color: inherit; font: inherit; }
+  .ex { text-align: right; font-size: 18px; margin-top: 6px; word-break: break-all; }
+  .val { text-align: right; font-size: 28px; margin-top: 2px; }
+  .val::before { content: "＝ "; font-size: 18px; }
+  .val.neg { color: var(--red); }
+  .tape .ex, .tape .val { display: block; width: 100%; }
+  .tape button { text-align: inherit; }
+  .tape button:hover { background: rgba(40,48,122,.08); }
+  .date { text-align: center; font-size: 12px; opacity: .55; padding: 12px 0 2px; }
+  .line.new { animation: feed .28s ease-out; }
+  @keyframes feed { from { transform: translateY(24px); opacity: 0; } }
+  @media (prefers-reduced-motion: reduce) { .line.new { animation: none; } }
+
+  /* 印字ヘッド（テープの出口） */
+  .printer {
+    height: 58px; border-radius: 10px 10px 16px 16px; margin: 0 -10px;
+    background: linear-gradient(180deg, #4a5049, #3a3f39);
+    box-shadow: 0 12px 24px -12px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.12);
+    display: flex; align-items: center; gap: 6px; padding: 0 14px; position: relative; z-index: 1;
+  }
+  .printer::before {
+    content: ""; position: absolute; left: 14px; right: 14px; top: -3px; height: 6px; border-radius: 3px; background: #252924;
+  }
+  .pbtn {
+    font-size: 13px; font-weight: 600; color: #e6e9e3; padding: 7px 10px; border-radius: 7px;
+    background: rgba(255,255,255,.08);
+  }
+  .pbtn:hover { background: rgba(255,255,255,.16); }
+  .pbtn.tear { color: #ffb3b5; }
+  .count { font-size: 13px; color: #9aa197; }
+</style>
+</head>
+<body>
+<div class="desk">
+
+  <main class="machine">
+    <div class="plate">
+      <div class="brand">ReCalc</div>
+      <div class="spacer"></div>
+      <div class="slide"><span class="on">DEG</span><span class="track" role="switch" aria-checked="false" title="角度の単位"></span><span>RAD</span></div>
+      <button class="help" title="使い方 (F1)">?</button>
+    </div>
+
+    <div class="lcd-frame">
+      <div class="lcd">
+        <div class="lcd-top">
+          <input class="expr" value="ans×12" autofocus spellcheck="false" autocomplete="off" aria-label="式">
+          <span class="preview">26,136</span>
+        </div>
+        <div class="result">2,178</div>
+        <div class="indicators"><span class="lit">DEG</span><span>RAD</span><span class="lit">ANS</span><span>ERR</span></div>
+      </div>
+    </div>
+
+    <section class="keys">
+      <button class="k fn">sin</button><button class="k fn">cos</button><button class="k fn">tan</button><button class="k fn">ln</button><button class="k fn">log</button>
+      <button class="k fn">√</button><button class="k fn">x<sup>y</sup></button><button class="k fn">n!</button><button class="k fn">π</button><button class="k fn">e</button>
+      <button class="k fn">(</button><button class="k fn">)</button><button class="k fn">%</button><button class="k fn">ans</button><button class="k fn ctl">⌫</button>
+      <button class="k">7</button><button class="k">8</button><button class="k">9</button><button class="k op">÷</button><button class="k ctl ac">AC</button>
+      <button class="k">4</button><button class="k">5</button><button class="k pressed">6</button><button class="k op">×</button><button class="k ctl" title="結果をコピー">コピー</button>
+      <button class="k">1</button><button class="k">2</button><button class="k">3</button><button class="k op">−</button><button class="k eq">=</button>
+      <button class="k zero">0</button><button class="k">.</button><button class="k op">+</button>
+    </section>
+  </main>
+
+  <aside class="roll" aria-label="記録">
+    <div class="tape-wrap">
+      <div class="tape">
+        <div class="date">10/22</div>
+        <div class="line">
+          <div class="meta"><button>No.1</button><span class="t">21:10</span></div>
+          <button class="ex">123456+1500</button>
+          <button class="val">124,956</button>
+        </div>
+        <div class="line">
+          <div class="meta"><button>No.2</button><span class="t">21:15</span></div>
+          <button class="ex">2^10×√16</button>
+          <button class="val">4,096</button>
+        </div>
+        <div class="date">今日</div>
+        <div class="line">
+          <div class="meta"><button>No.3</button><span class="t">10:42</span></div>
+          <button class="ex">#1/3</button>
+          <button class="val">41,652</button>
+        </div>
+        <div class="line">
+          <div class="meta"><button>No.4</button><span class="t">10:43</span></div>
+          <button class="ex">1500−#1/80</button>
+          <button class="val neg">−61.95</button>
+        </div>
+        <div class="line new">
+          <div class="meta"><button>No.5</button><span class="t">10:44</span></div>
+          <button class="ex">1980×1.1</button>
+          <button class="val">2,178</button>
+        </div>
+      </div>
+    </div>
+    <div class="printer">
+      <button class="pbtn">JSON に保存</button>
+      <button class="pbtn">CSV に保存</button>
+      <button class="pbtn">読み込む</button>
+      <span class="spacer"></span>
+      <span class="count">5件</span>
+      <button class="pbtn tear" title="記録をすべて消す">切り離す</button>
+    </div>
+  </aside>
+</div>
+</body>
+</html>

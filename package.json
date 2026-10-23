@@ -1,0 +1,10 @@
+{
+  "name": "recalc",
+  "version": "0.1.0",
+  "private": true,
+  "description": "記録して再利用できる、大きな表示の関数電卓",
+  "license": "MIT",
+  "scripts": {
+    "test": "node --test test/"
+  }
+}

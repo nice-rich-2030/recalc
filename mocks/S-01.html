@@ -1,0 +1,190 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ReCalc — S-01 モック</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  /* 案C：工業デザイン。主役は丸く盛り上がったキーの並び。ほかは静かに */
+  :root {
+    --room: #8d8579;
+    --body: #34302b;
+    --body-hi: #3e3933;
+    --key: #26231f;
+    --key-legend: #efe9dd;
+    --key-fn: #57514a;
+    --yellow: #f0bd2c;
+    --window: #1b1a17;
+    --digit: #f3eee4;
+    --muted: #a39b8e;
+    --sans: "Archivo", "Hiragino Sans", "Yu Gothic UI", "Meiryo", system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: radial-gradient(1000px 700px at 30% 20%, #9a9286, var(--room));
+    font-family: var(--sans); color: var(--key-legend);
+    font-variant-numeric: tabular-nums;
+  }
+  button { font: inherit; color: inherit; border: 0; background: none; cursor: pointer; }
+  button:focus-visible { outline: 2px solid var(--yellow); outline-offset: 3px; }
+
+  .stage { min-height: 100vh; display: grid; place-items: center; padding: 24px; }
+  .device {
+    width: min(1060px, 100%);
+    display: grid; grid-template-columns: 640px 1fr;
+    background: linear-gradient(160deg, var(--body-hi), var(--body) 45%);
+    border-radius: 28px;
+    box-shadow: 0 40px 70px -30px rgba(30,24,16,.7), inset 0 1px 0 rgba(255,255,255,.08);
+    overflow: hidden;
+  }
+  @media (max-width: 960px) { .device { grid-template-columns: 1fr; } }
+
+  .calc { padding: 22px 34px 26px; display: flex; flex-direction: column; gap: 18px; }
+  .row { display: flex; align-items: center; gap: 16px; }
+  .name { font-size: 15px; font-weight: 600; color: var(--muted); letter-spacing: .03em; }
+  .spacer { flex: 1; }
+  .unit { display: flex; gap: 14px; font-size: 13px; color: var(--muted); }
+  .unit button { display: inline-flex; align-items: center; gap: 6px; }
+  .unit button::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: #1f1c19; box-shadow: inset 0 1px 2px #000; }
+  .unit button.on { color: var(--key-legend); }
+  .unit button.on::before { background: var(--yellow); box-shadow: 0 0 6px rgba(240,189,44,.6); }
+  .help { font-size: 13px; color: var(--muted); }
+  .help:hover { color: var(--key-legend); }
+
+  .window {
+    background: var(--window); border-radius: 14px; padding: 16px 24px 18px;
+    box-shadow: inset 0 3px 10px rgba(0,0,0,.7), 0 1px 0 rgba(255,255,255,.07);
+  }
+  .w-top { display: flex; align-items: baseline; gap: 16px; }
+  .expr {
+    flex: 1; min-width: 0; background: transparent; border: 0; outline: 0;
+    font: 400 28px/1.3 var(--sans); color: var(--muted); caret-color: var(--yellow);
+  }
+  .preview { font-size: 22px; color: #6f685e; white-space: nowrap; }
+  .result {
+    text-align: right; font-size: 88px; font-weight: 300; line-height: 1.05; color: var(--digit);
+    letter-spacing: -.01em;
+  }
+
+  /* 主役：丸いキー */
+  .keys {
+    display: grid; grid-template-columns: repeat(5, 1fr);
+    gap: 10px 0; justify-items: center; align-items: center;
+  }
+  .k {
+    --size: 82px;
+    width: var(--size); height: var(--size); border-radius: 50%;
+    background: radial-gradient(circle at 50% 35%, #3a3631, var(--key) 70%);
+    color: var(--key-legend); font-size: 28px; font-weight: 400;
+    box-shadow: 0 6px 10px -2px rgba(0,0,0,.55), 0 1px 0 rgba(255,255,255,.08) inset, 0 -2px 4px rgba(0,0,0,.4) inset;
+    transition: transform .06s, box-shadow .06s;
+  }
+  .k:active, .k.pressed {
+    transform: translateY(2px);
+    background: radial-gradient(circle at 50% 65%, #3a3631, var(--key) 70%);
+    box-shadow: 0 2px 3px rgba(0,0,0,.5), 0 2px 6px rgba(0,0,0,.6) inset;
+  }
+  .k.fn {
+    --size: 60px; font-size: 16px; color: #e3dccd;
+    background: radial-gradient(circle at 50% 35%, #69625a, var(--key-fn) 70%);
+  }
+  .k.op { color: var(--yellow); font-size: 32px; }
+  .k.ctl { font-size: 15px; color: var(--muted); }
+  .k.eq {
+    background: radial-gradient(circle at 50% 35%, #ffd65c, var(--yellow) 70%);
+    color: #3a2c05; font-size: 36px; font-weight: 600;
+  }
+  .k sup { font-size: .6em; }
+
+  /* 記録：本体と同じ面に彫り込まれた一覧。静かに */
+  .log {
+    border-left: 1px solid rgba(0,0,0,.35);
+    box-shadow: inset 1px 0 0 rgba(255,255,255,.04);
+    display: flex; flex-direction: column; min-height: 0;
+    background: rgba(0,0,0,.12);
+  }
+  .log-head { display: flex; align-items: baseline; padding: 26px 24px 12px; gap: 10px; }
+  .log-head h2 { margin: 0; font-size: 15px; font-weight: 600; color: var(--muted); }
+  .log-head .n { font-size: 13px; color: #7c7468; }
+  .list { list-style: none; margin: 0; padding: 0 12px; overflow: auto; flex: 1; }
+  .rec {
+    padding: 12px; display: grid; grid-template-columns: auto 1fr; gap: 2px 12px;
+    /* 本体に彫り込んだような区切り線（暗い線＋下に薄い明るい線） */
+    border-bottom: 1px solid rgba(0,0,0,.42);
+    box-shadow: 0 1px 0 rgba(255,255,255,.05);
+  }
+  .rec:last-child { border-bottom: 0; box-shadow: none; }
+  .rec:hover { background: rgba(255,255,255,.04); }
+  .rec .no { grid-row: span 2; font-size: 13px; color: #7c7468; padding-top: 3px; }
+  .rec .no:hover { color: var(--yellow); }
+  .rec .ex { text-align: right; font-size: 15px; color: var(--muted); word-break: break-all; }
+  .rec .val { text-align: right; font-size: 26px; font-weight: 400; color: var(--digit); }
+  .rec .ex:hover, .rec .val:hover { color: var(--yellow); }
+  .rec .when { grid-column: 2; text-align: right; font-size: 11px; color: #6c655b; }
+  .rec { position: relative; }
+  .rec .tools { position: absolute; left: 12px; bottom: 10px; display: none; gap: 4px; }
+  .rec:hover .tools, .rec:focus-within .tools { display: flex; }
+  .tool { font-size: 11px; color: var(--muted); padding: 3px 7px; border-radius: 6px; background: rgba(0,0,0,.25); }
+  .tool:hover { color: var(--key-legend); }
+  .tool.del:hover { color: #ff9a8a; }
+  .sep { font-size: 12px; color: #6c655b; padding: 14px 12px 4px; }
+  .log-foot { display: flex; gap: 4px; flex-wrap: wrap; padding: 14px 18px 22px; border-top: 1px solid rgba(0,0,0,.3); }
+  .lb { font-size: 12px; color: var(--muted); padding: 7px 10px; border-radius: 8px; }
+  .lb:hover { background: rgba(255,255,255,.06); color: var(--key-legend); }
+  .lb.danger:hover { color: #ff9a8a; }
+</style>
+</head>
+<body>
+<div class="stage">
+  <div class="device">
+    <main class="calc">
+      <div class="row">
+        <div class="name">ReCalc</div>
+        <div class="spacer"></div>
+        <div class="unit" role="radiogroup" aria-label="角度の単位"><button class="on">DEG</button><button>RAD</button></div>
+        <button class="help">使い方</button>
+      </div>
+
+      <div class="window">
+        <div class="w-top">
+          <input class="expr" value="ans×12" autofocus spellcheck="false" autocomplete="off" aria-label="式">
+          <span class="preview">= 26,136</span>
+        </div>
+        <div class="result">2,178</div>
+      </div>
+
+      <section class="keys">
+        <button class="k fn">sin</button><button class="k fn">cos</button><button class="k fn">tan</button><button class="k fn">ln</button><button class="k fn">log</button>
+        <button class="k fn">√</button><button class="k fn">x<sup>y</sup></button><button class="k fn">n!</button><button class="k fn">π</button><button class="k fn">e</button>
+        <button class="k fn">(</button><button class="k fn">)</button><button class="k fn">%</button><button class="k fn">ans</button><button class="k fn">⌫</button>
+        <button class="k">7</button><button class="k">8</button><button class="k">9</button><button class="k op">÷</button><button class="k ctl">AC</button>
+        <button class="k">4</button><button class="k">5</button><button class="k pressed">6</button><button class="k op">×</button><button class="k ctl">コピー</button>
+        <button class="k">1</button><button class="k">2</button><button class="k">3</button><button class="k op">−</button><button class="k op">+</button>
+        <button class="k">0</button><button class="k">00</button><button class="k">.</button><button class="k ctl">±</button><button class="k eq">=</button>
+      </section>
+    </main>
+
+    <aside class="log">
+      <div class="log-head"><h2>記録</h2><span class="n">5件</span></div>
+      <ul class="list">
+        <li class="sep">今日</li>
+        <li class="rec"><button class="no">#1</button><button class="ex">1980×1.1</button><button class="val">2,178</button><span class="when">10:44</span><span class="tools"><button class="tool" title="式 = 結果 をコピー">コピー</button><button class="tool del" title="この記録を消す">消す</button></span></li>
+        <li class="rec"><button class="no">#2</button><button class="ex">sin(30)+cos(60)</button><button class="val">1</button><span class="when">10:43</span><span class="tools"><button class="tool" title="式 = 結果 をコピー">コピー</button><button class="tool del" title="この記録を消す">消す</button></span></li>
+        <li class="rec"><button class="no">#3</button><button class="ex">124956/3</button><button class="val">41,652</button><span class="when">10:42</span><span class="tools"><button class="tool" title="式 = 結果 をコピー">コピー</button><button class="tool del" title="この記録を消す">消す</button></span></li>
+        <li class="sep">10月22日</li>
+        <li class="rec"><button class="no">#4</button><button class="ex">2^10×√16</button><button class="val">4,096</button><span class="when">21:15</span><span class="tools"><button class="tool" title="式 = 結果 をコピー">コピー</button><button class="tool del" title="この記録を消す">消す</button></span></li>
+        <li class="rec"><button class="no">#5</button><button class="ex">123456+1500</button><button class="val">124,956</button><span class="when">21:10</span><span class="tools"><button class="tool" title="式 = 結果 をコピー">コピー</button><button class="tool del" title="この記録を消す">消す</button></span></li>
+      </ul>
+      <div class="log-foot">
+        <button class="lb">JSON に保存</button><button class="lb">CSV に保存</button><button class="lb">読み込む</button>
+        <span class="spacer"></span><button class="lb danger">すべて消す</button>
+      </div>
+    </aside>
+  </div>
+</div>
+</body>
+</html>
